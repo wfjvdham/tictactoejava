@@ -37,62 +37,49 @@ public class BotStarter {
      * @return The column where the turn was made.
      */
 	public Move makeTurn(Field field) {	
-		//ArrayList<Move> availableMoves = field.getAvailableMoves();
-		//ArrayList<Move> boardWinningMoves = field.getBoardWinningMoves();
-		//ArrayList<Move> oppBoardWinningMoves = field.getOppBoardWinningMoves();	
-		//do not give option of putting anywhere on the map
-		//field.filterOutOppHaveAllOptions(availableMoves);
-		//do not give opponent chance to make 3 in a row in the next move
-		//field.filterOutOppCanMake3NextTurn(availableMoves, oppBoardWinningMoves);
-		//block 3 in a row
-		//contains(availableMoves, oppBoardWinningMoves, 10);
-		//add game winning moves
-		//field.gameWinningMoves(availableMoves);
-		//score macro boards
-		//field.calculateMacroScore(availableMoves);
-		//negative score useless macroboards
-		//field.uselessMacroBoards(availableMoves);
-		//make 3 in a row
-		//contains(availableMoves, boardWinningMoves, 100);
-		//add scoring to each move: nr of options 3 in a row can be made
+		ArrayList<Move> availableMoves = field.getAvailableMoves();
+		//place move and calculate score of board
+		int depth = 2;
+		for (int i = 0; i < availableMoves.size(); i++) {
+			Move move = availableMoves.get(i);
+			Field newField = field.playMove(move);
+			ScoreDepth sd = newField.getScore(depth);
+			move.addScore(sd.getScore());
+			move.setDepth(sd.getDepth());
+//			System.out.println(
+//					"Move X: " + move.getX() 
+//					+ " Y: " + move.getY() 
+//					+ " score: " + move.getScore()
+//					+ " depth: " + depth);
+		}		
+		//TODO add a b pruning
+		//TODO refine microboard scores for emty situations
 		//TODO do not give other player possibility to block
 		//TODO if macro is usefull prefer making 3 in a row
-		//TODO if oponent macro is dangerous prefer blocking
+		//TODO if opponent macro is dangerous prefer blocking
 		//TODO calculate opp macro score
 		//TODO when a move blocks three in and the next move is in the same macro
 			//alg thinks this is bad because opp can make 3 in a row, but this is blocked..
 		//field.calculateScore(availableMoves);
-		//Collections.sort(availableMoves, new Comparator<Move>(){
-		//  public int compare(Move m1, Move m2)
-		//  {
-		//  	if(m1.getNrOf3Extra()>m2.getNrOf3Extra()) {
-		//			return -1;
-		//		} else {
-		//			return 1;
-		//		}
-		//  }
-		//});
-		Status status = new Status(null);
-		status.setField(field);
-		status.minMax(3, true, Integer.MIN_VALUE, Integer.MAX_VALUE);
-		Move move = status.getBestMove();
-		//return availableMoves.get(0); /* get best score move */
-		return move;
-	}
-
-	public void contains(ArrayList<Move> a, ArrayList<Move> b, int points) {
-		for (int i = 0; i < a.size(); i++) {
-			for (int j = 0; j < b.size(); j++) {
-				Move av = a.get(i);
-				Move bw = b.get(j);
-				if (av.getX()==bw.getX()&&
-						av.getY()==bw.getY()) {
-					if (av.getNrOf3Extra()>0) {
-						av.addNrOf3Extra(points);
-					}
+		Collections.sort(availableMoves, new Comparator<Move>(){
+		  public int compare(Move m1, Move m2)
+		  {
+		  	if(m1.getScore()>m2.getScore()) {
+					return -1;
+				} else if (m1.getScore()==m2.getScore()){
+					if (m1.getDepth()>m2.getDepth()) {
+  					return -1;
+  				} else if (m1.getDepth()==m2.getDepth()) {
+  					return 0;
+  				} else {
+  					return 1;
+  				}
+				} else {
+					return 1;
 				}
-			}
-		}
+		  }
+		});
+		return availableMoves.get(0); /* get best score move */
 	}
 
 	public static void main(String[] args) {
