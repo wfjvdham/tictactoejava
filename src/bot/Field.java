@@ -113,7 +113,7 @@ public class Field {
 		}
 	}
 	
-	public ScoreDepth getScore(int depth) {
+	public ScoreDepth getScore(int depth, int alpha) {
 		int oppId = 1;
 		if (myID==1) {
 			oppId = 2;
@@ -131,7 +131,7 @@ public class Field {
 			} else {
 				score=Integer.MIN_VALUE;
 			}
-			return new ScoreDepth(score,depth);
+			return new ScoreDepth(score,depth,alpha);
 		}	else {
 			//check how much macroboard three in a rows can be made
 			//macro boards
@@ -159,68 +159,79 @@ public class Field {
 			}
 		}
 		if (depth==0) {
-			return new ScoreDepth(score,depth);
+			return new ScoreDepth(score,depth,alpha);
+		} else if (depth==2) {
+			//return current score to allow check where deeper evaluation is needed
+			if (score <= alpha) {
+				alpha = score;
+				return goDeeper(depth,alpha);
+			} else {
+				return new ScoreDepth(score,depth,alpha);
+			}
 		} else {
-  		//recursivly get score of next opp moves
-  		ArrayList<Move> availableMoves = getAvailableMoves();
-  		//place move and calculate score of board
-  		depth = depth-1;
-  		for (int i = 0; i < availableMoves.size(); i++) {
-  			Move move = availableMoves.get(i);
-  			Field newField = playMove(move);
-  			ScoreDepth sd = newField.getScore(depth);
-  			move.addScore(sd.getScore());
-  			move.setDepth(sd.getDepth());
-//  			System.out.println(
-//  					"Move X: " + move.getX() 
-//  					+ " Y: " + move.getY() 
-//  					+ " score: " + move.getScore()
-//  					+ " depth: " + depth);
-  		}
-  		if (playerWhoHasTurnID==myID) {
-    		Collections.sort(availableMoves, new Comparator<Move>(){
-    		  public int compare(Move m1, Move m2)
-    		  {
-    		  	if(m1.getScore()>m2.getScore()) {
-    					return -1;
-    				} else if (m1.getScore()==m2.getScore()){
-    					if (m1.getDepth()>m2.getDepth()) {
-      					return -1;
-      				} else if (m1.getDepth()==m2.getDepth()) {
-      					return 0;
-      				} else {
-      					return 1;
-      				}
-    				} else {
-    					return 1;
-    				}
-    		  }
-    		});
-  		} else {
-    		Collections.sort(availableMoves, new Comparator<Move>(){
-    		  public int compare(Move m1, Move m2)
-    		  {
-    		  	if(m1.getScore()<m2.getScore()) {
-    					return -1;
-    				} else if (m1.getScore()==m2.getScore()){
-    					if (m1.getDepth()>m2.getDepth()) {
-      					return -1;
-      				} else if (m1.getDepth()==m2.getDepth()) {
-      					return 0;
-      				} else {
-      					return 1;
-      				}
-    				} else {
-    					return 1;
-    				}
-    		  }
-    		});
-  		}
-  		return new ScoreDepth(availableMoves.get(0).getScore(),depth);
+  		return goDeeper(depth,alpha);
 		}
 	}
 	
-	
+	private ScoreDepth goDeeper(int depth,int alpha) {
+		//recursivly get score of next opp moves
+		ArrayList<Move> availableMoves = getAvailableMoves();
+		//place move and calculate score of board
+		depth = depth-1;
+		for (int i = 0; i < availableMoves.size(); i++) {
+			Move move = availableMoves.get(i);
+			Field newField = playMove(move);
+			ScoreDepth sd = newField.getScore(depth,alpha);
+			move.addScore(sd.getScore());
+			move.setDepth(sd.getDepth());
+			alpha = sd.getAlpha();
+			System.out.println(
+					"Move X: " + move.getX() 
+					+ " Y: " + move.getY() 
+					+ " score: " + move.getScore()
+					+ " depth: " + depth);
+		}
+		if (playerWhoHasTurnID==myID) {
+  		Collections.sort(availableMoves, new Comparator<Move>(){
+  		  public int compare(Move m1, Move m2)
+  		  {
+  		  	if(m1.getScore()>m2.getScore()) {
+  					return -1;
+  				} else if (m1.getScore()==m2.getScore()){
+  					if (m1.getDepth()>m2.getDepth()) {
+    					return -1;
+    				} else if (m1.getDepth()==m2.getDepth()) {
+    					return 0;
+    				} else {
+    					return 1;
+    				}
+  				} else {
+  					return 1;
+  				}
+  		  }
+  		});
+		} else {
+  		Collections.sort(availableMoves, new Comparator<Move>(){
+  		  public int compare(Move m1, Move m2)
+  		  {
+  		  	if(m1.getScore()<m2.getScore()) {
+  					return -1;
+  				} else if (m1.getScore()==m2.getScore()){
+  					if (m1.getDepth()>m2.getDepth()) {
+    					return -1;
+    				} else if (m1.getDepth()==m2.getDepth()) {
+    					return 0;
+    				} else {
+    					return 1;
+    				}
+  				} else {
+  					return 1;
+  				}
+  		  }
+  		});
+		}
+		return new ScoreDepth(availableMoves.get(0).getScore(),depth,alpha);
+	}
 	
 	private int getOptionsOnMacroboards(int id) {
 		int score = 0, x=0, y=0;

@@ -6,6 +6,7 @@ import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.InputStream;
 import java.io.PrintStream;
@@ -55,9 +56,12 @@ public class Tests {
 	}
 	
 	@Test
-	public void notOfferOptionsTest() {
+	public void notOfferOptionsTest() throws FileNotFoundException {
 		setFileAsInput("C://Users//w.vanderham//workspace//tictactoejava//input//notOfferOptions.txt");
-		String str = myOut.toString().substring(0, 14);
+		String str = myOut.toString();//.substring(0, 14);
+  	FileOutputStream f = new FileOutputStream("file.txt");
+  	System.setOut(new PrintStream(f));
+  	System.out.println(str);
 		assertTrue(str.equals("place_move 0 0") || str.equals("place_move 2 2"));
 	}
 
