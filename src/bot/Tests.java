@@ -68,7 +68,7 @@ public class Tests {
 	@Test
 	public void block3Test() {
 		setFileAsInput("C://Users//w.vanderham//workspace//tictactoejava//input//block3Test.txt");
-		String str = myOut.toString().substring(0, 14);;
+		String str = myOut.toString().substring(0, 14);
     assertEquals("place_move 2 2",str);
 	}
 	
@@ -130,5 +130,12 @@ public class Tests {
 		setFileAsInput("C://Users//w.vanderham//workspace//tictactoejava//input//endGameTest.txt");
 		String str = myOut.toString().substring(0, 14);
 		assertEquals("place_move 1 2",str);
+	}
+	
+	@Test
+	public void errorTest() {
+		setFileAsInput("C://Users//w.vanderham//workspace//tictactoejava//input//error2.txt");
+		String str = myOut.toString().substring(0, 14);
+    assertEquals("place_move 2 2",str);
 	}
 }

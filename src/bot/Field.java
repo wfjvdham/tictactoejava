@@ -34,7 +34,8 @@ import java.util.Comparator;
 public class Field {
   private int[][] mBoard;
 	private int[][] mMacroboard;
-	private int[][] mMicroboardScore;
+	private double[][] mMicroboardScore;
+	private int [][] newMacroboard;
 	private int myID;
 	private int playerWhoHasTurnID;
 	private final int COLS = 9, ROWS = 9;
@@ -43,7 +44,7 @@ public class Field {
 	public Field() {
 		mBoard = new int[COLS][ROWS];
 		mMacroboard = new int[COLS / 3][ROWS / 3];
-		mMicroboardScore = new int[COLS / 3][ROWS / 3];
+		mMicroboardScore = new double[COLS / 3][ROWS / 3];
 		clearBoard();
 	}
 	
@@ -106,14 +107,18 @@ public class Field {
 				mBoard[x][y] = 0;
 			}
 		}
+		clearMacroboardScores();
+	}
+	
+	public void clearMacroboardScores() {
 		for (int x = 0; x < COLS/3; x++) {
 			for (int y = 0; y < ROWS/3; y++) {
-				mMicroboardScore[x][y] = 1;
+				mMicroboardScore[x][y] = 0;
 			}
 		}
 	}
 	
-	public ScoreDepth getScore(int depth, int alpha) {
+	public ScoreDepth getScore(int depth, double alpha) {
 		int oppId = 1;
 		if (myID==1) {
 			oppId = 2;
@@ -123,44 +128,49 @@ public class Field {
 			id = 2;
 		}
 		//check if game is finished
-		int score = 0;
+		double score = 0;
 		int status = calculateGameStatus();
 		if (status!=0&&status!=-1) {
 			if (status==myID) {
 				score=Integer.MAX_VALUE;
 			} else {
+				alpha = Integer.MIN_VALUE;
 				score=Integer.MIN_VALUE;
 			}
 			return new ScoreDepth(score,depth,alpha);
 		}	else {
 			//check how much macroboard three in a rows can be made
 			//macro boards
-			int score1 = 0;
+			double score1 = 0;
 			score1 = score1 + 1000000 * getWinningMoves(id,mMacroboard,0,0,true);
 			score1 = score1 + 10000 * getOptionsOnMacroboards(id);
-			uselessMacroBoards(playerWhoHasTurnID);
+			calculateMacroBoardScores(id);
 			//microboards
 			score1 = score1 + 100 * getBoardWinningMoves(id,mBoard);
 			score1 = score1 + 1 * getOptionsOnMicroboards(id);
 			
 			//calculate minus scores for opponent
-			int score2 = 0;
+			double score2 = 0;
+			clearMacroboardScores();
 			score2 = score2 + 1000000 * getWinningMoves(playerWhoHasTurnID,mMacroboard,0,0,true);
 			score2 = score2 + 10000 * getOptionsOnMacroboards(playerWhoHasTurnID);
-			uselessMacroBoards(oppId);
+			calculateMacroBoardScores(playerWhoHasTurnID);
 			//microboards
 			score2 = score2 + 100 * getBoardWinningMoves(playerWhoHasTurnID,mBoard);
 			score2 = score2 + 1 * getOptionsOnMicroboards(playerWhoHasTurnID);
 			
+			//own succes is more important than opp failure
 			if(id==myID) {
-				score = score1 - score2;
+				score = score1 - (score2 * 0.95);
 			} else {
-				score = -score1 + score2;
+				score = -(score1 * 0.95) + score2;
 			}
 		}
 		if (depth==0) {
 			return new ScoreDepth(score,depth,alpha);
 		} else if (depth==2) {
+			//TODO remove depth check from this if and replace by comparing alpha based on playerwHows turn it is
+			//possible alsa add a betha
 			//return current score to allow check where deeper evaluation is needed
 			if (score <= alpha) {
 				alpha = score;
@@ -173,77 +183,73 @@ public class Field {
 		}
 	}
 	
-	private ScoreDepth goDeeper(int depth,int alpha) {
+	private ScoreDepth goDeeper(int depth,double alpha) {
 		//recursivly get score of next opp moves
 		ArrayList<Move> availableMoves = getAvailableMoves();
-		//place move and calculate score of board
-		depth = depth-1;
-		for (int i = 0; i < availableMoves.size(); i++) {
-			Move move = availableMoves.get(i);
-			Field newField = playMove(move);
-			ScoreDepth sd = newField.getScore(depth,alpha);
-			move.addScore(sd.getScore());
-			move.setDepth(sd.getDepth());
-			alpha = sd.getAlpha();
-			System.out.println(
-					"Move X: " + move.getX() 
-					+ " Y: " + move.getY() 
-					+ " score: " + move.getScore()
-					+ " depth: " + depth);
-		}
-		if (playerWhoHasTurnID==myID) {
-  		Collections.sort(availableMoves, new Comparator<Move>(){
-  		  public int compare(Move m1, Move m2)
-  		  {
-  		  	if(m1.getScore()>m2.getScore()) {
-  					return -1;
-  				} else if (m1.getScore()==m2.getScore()){
-  					if (m1.getDepth()>m2.getDepth()) {
+		if (availableMoves.size()>0) {
+  		//place move and calculate score of board
+  		depth = depth-1;
+  		for (int i = 0; i < availableMoves.size(); i++) {
+  			Move move = availableMoves.get(i);
+  			Field newField = playMove(move);
+  			ScoreDepth sd = newField.getScore(depth,alpha);
+  			move.addScore(sd.getScore());
+  			move.setDepth(sd.getDepth());
+  			alpha = sd.getAlpha();
+  //			System.out.println(
+  //					"Move X: " + move.getX() 
+  //					+ " Y: " + move.getY() 
+  //					+ " score: " + move.getScore()
+  //					+ " depth: " + depth);
+  		}
+  		if (playerWhoHasTurnID==myID) {
+    		Collections.sort(availableMoves, new Comparator<Move>(){
+    		  public int compare(Move m1, Move m2)
+    		  {
+    		  	if(m1.getScore()>m2.getScore()) {
     					return -1;
-    				} else if (m1.getDepth()==m2.getDepth()) {
-    					return 0;
+    				} else if (m1.getScore()==m2.getScore()){
+    					if (m1.getDepth()>m2.getDepth()) {
+      					return -1;
+      				} else if (m1.getDepth()==m2.getDepth()) {
+      					return 0;
+      				} else {
+      					return 1;
+      				}
     				} else {
     					return 1;
     				}
-  				} else {
-  					return 1;
-  				}
-  		  }
-  		});
+    		  }
+    		});
+  		} else {
+    		Collections.sort(availableMoves, new Comparator<Move>(){
+    		  public int compare(Move m1, Move m2)
+    		  {
+    		  	if(m1.getScore()<m2.getScore()) {
+    					return -1;
+    				} else if (m1.getScore()==m2.getScore()){
+    					if (m1.getDepth()>m2.getDepth()) {
+      					return -1;
+      				} else if (m1.getDepth()==m2.getDepth()) {
+      					return 0;
+      				} else {
+      					return 1;
+      				}
+    				} else {
+    					return 1;
+    				}
+    		  }
+    		});
+  		}
+  		return new ScoreDepth(availableMoves.get(0).getScore(),depth,alpha);
 		} else {
-  		Collections.sort(availableMoves, new Comparator<Move>(){
-  		  public int compare(Move m1, Move m2)
-  		  {
-  		  	if(m1.getScore()<m2.getScore()) {
-  					return -1;
-  				} else if (m1.getScore()==m2.getScore()){
-  					if (m1.getDepth()>m2.getDepth()) {
-    					return -1;
-    				} else if (m1.getDepth()==m2.getDepth()) {
-    					return 0;
-    				} else {
-    					return 1;
-    				}
-  				} else {
-  					return 1;
-  				}
-  		  }
-  		});
+			//game is a draw
+			return new ScoreDepth(0,depth,alpha);
 		}
-		return new ScoreDepth(availableMoves.get(0).getScore(),depth,alpha);
 	}
 	
 	private int getOptionsOnMacroboards(int id) {
 		int score = 0, x=0, y=0;
-		int [][] newMacroboard = new int[mMacroboard.length][];
-		for(int n = 0; n < mMacroboard.length; n++)
-			newMacroboard[n] = mMacroboard[n].clone();
-		for (int i=0;i<3;i++) {
-			for (int j=0;j<3;j++) {
-				if(newMacroboard[i][j]==-1) {newMacroboard[i][j]=0;}
-				if(newMacroboard[i][j]==0&&macroboardIsFull(i,j)) {newMacroboard[i][j]=-2;}
-			}
-		}
 		int[][] board = newMacroboard;
 		if (board[x][y]==id&&board[x+1][y]==0&&board[x+2][y]==0||
 				board[x][y]==0&&board[x+1][y]==id&&board[x+2][y]==0||
@@ -288,8 +294,8 @@ public class Field {
 		return score;
 	}
 	
-	private int getOptionsOnMicroboards(int id) {
-		int score = 0;
+	private double getOptionsOnMicroboards(int id) {
+		double score = 0;
 		int[][] board = mBoard;
 		for (int x = 0; x < 9; x=x+3) {
 			for (int y = 0; y < 9; y=y+3) {
@@ -367,12 +373,8 @@ public class Field {
 		return moves;
 	}
 	
-//	public ArrayList<Move> getBoardWinningMoves() {
-//		return getBoardWinningMoves(playerWhoHasTurnID,mBoard);
-//	}
-	
-	public int getBoardWinningMoves(int id, int[][] board) {
-		int score = 0;
+	public double getBoardWinningMoves(int id, int[][] board) {
+		double score = 0;
 	  for (int x = 0; x < COLS; x=x+3) {
 		  for (int y = 0; y < ROWS; y=y+3) {
 		  	if(mMacroboard[x/3][y/3]!=1&&mMacroboard[x/3][y/3]!=2&&!macroboardIsFull(x/3, y/3)) {
@@ -383,108 +385,130 @@ public class Field {
 		return score;
 	}
 	
-//	public void gameWinningMoves(ArrayList<Move> moves) {
-//  	ArrayList<Move> macroMoves = new ArrayList<Move>();
-//    macroMoves = getWinningMoves(macroMoves,playerWhoHasTurnID,mMacroboard,0,0);
-//    for (int i = 0; i < moves.size(); i++) {
-//    	Move move = moves.get(i);
-//    	for (int j = 0; j < macroMoves.size(); j++) {
-//    		Move macroMove = macroMoves.get(j);
-//    		if(moveIsInMacroBoard(move,macroMove)) {
-//    			move.addNrOf3Extra(1000);
-//    		}
-//    	}
-//    }
-//	}
-	
-//	public void calculateMacroScore(ArrayList<Move> moves) {
-//		ArrayList<Move> macroMoves = new ArrayList<Move>();
-//		macroMoves = getWinningMoves(macroMoves,playerWhoHasTurnID,mMacroboard,0,0);
-//		int scoreBefore = macroMoves.size();
-//		for (int x = 0; x < 3; x=x+1) {
-//		  for (int y = 0; y < 3; y=y+1) {
-//		  	if (mMacroboard[x][y]==-1) {
-//					int [][] newMacroboard = new int[mMacroboard.length][];
-//					for(int n = 0; n < mMacroboard.length; n++)
-//						newMacroboard[n] = mMacroboard[n].clone();
-//					newMacroboard[x][y] = playerWhoHasTurnID;
-//		  		macroMoves = new ArrayList<Move>();
-//		  		macroMoves = getWinningMoves(macroMoves,playerWhoHasTurnID,newMacroboard,0,0);
-//		  		int scoreAfter = macroMoves.size();
-//		  		for (int n = 0; n < moves.size(); n++) {
-//		  			if(moveIsInMacroBoard(moves.get(n),new Move(x,y))) {
-//		  				moves.get(n).addNrOf3Extra(20*(scoreAfter-scoreBefore));
-//		  			}
-//		  		}
-//		  	}
-//		  }
-//		}
-//	}
-	
-	public void uselessMacroBoards(int id) {
-		for (int xMacro = 0; xMacro <3; xMacro++) {
-			for (int yMacro = 0; yMacro<3; yMacro++) {
-  			if (xMacro==0&&yMacro==0) {
-  				if (((mMacroboard[0][1]==id^mMacroboard[0][2]==id)||macroboardIsFull(0,1)||macroboardIsFull(0,2))&&
-  						((mMacroboard[1][1]==id^mMacroboard[2][2]==id)||macroboardIsFull(1,1)||macroboardIsFull(2,2))&&
-  						((mMacroboard[1][0]==id^mMacroboard[2][0]==id)||macroboardIsFull(1,0)||macroboardIsFull(2,0))	
-  						) {
-  					mMicroboardScore[xMacro][yMacro] = 0;
-  				}
-  			} else if (xMacro==1&&yMacro==0) {
-  				if (((mMacroboard[0][0]==id^mMacroboard[2][0]==id)||macroboardIsFull(0,0)||macroboardIsFull(2,0))&&
-  						((mMacroboard[1][1]==id^mMacroboard[2][1]==id)||macroboardIsFull(1,1)||macroboardIsFull(2,1))
-  						) {
-  					mMicroboardScore[xMacro][yMacro] = 0;
-  				}
-  			} else if (xMacro==2&&yMacro==0) {
-  				if (((mMacroboard[0][0]==id^mMacroboard[2][0]==id)||macroboardIsFull(0,0)||macroboardIsFull(2,0))&&
-  						((mMacroboard[1][1]==id^mMacroboard[2][1]==id)||macroboardIsFull(1,1)||macroboardIsFull(2,1))&&
-  						((mMacroboard[1][0]==id^mMacroboard[2][0]==id)||macroboardIsFull(1,0)||macroboardIsFull(2,0))	
-  						) {
-  					mMicroboardScore[xMacro][yMacro] = 0;
-  				}
-  			} else if (xMacro==0&&yMacro==1) {
-  				if (((mMacroboard[1][1]==id^mMacroboard[2][1]==id)||macroboardIsFull(1,1)||macroboardIsFull(2,1))&&
-  						((mMacroboard[0][0]==id^mMacroboard[0][2]==id)||macroboardIsFull(0,0)||macroboardIsFull(0,2))	
-  						) {
-  					mMicroboardScore[xMacro][yMacro] = 0;
-  				}
-  			} else if (xMacro==1&&yMacro==1) {
-  				if (((mMacroboard[0][0]==id^mMacroboard[2][2]==id)||macroboardIsFull(0,0)||macroboardIsFull(2,2))&&
-  						((mMacroboard[0][2]==id^mMacroboard[2][0]==id)||macroboardIsFull(0,2)||macroboardIsFull(2,0))&&
-  						((mMacroboard[1][0]==id^mMacroboard[1][2]==id)||macroboardIsFull(1,0)||macroboardIsFull(1,2))&&
-  						((mMacroboard[0][1]==id^mMacroboard[2][1]==id)||macroboardIsFull(0,1)||macroboardIsFull(2,1))
-  						) {
-  					mMicroboardScore[xMacro][yMacro] = 0;
-  				}
-  			} else if (xMacro==2&&yMacro==1) {
-  				if (((mMacroboard[1][1]==id^mMacroboard[0][1]==id)||macroboardIsFull(1,1)||macroboardIsFull(0,1))&&
-  						((mMacroboard[2][0]==id^mMacroboard[2][2]==id)||macroboardIsFull(2,0)||macroboardIsFull(2,2))	
-  						) {
-  					mMicroboardScore[xMacro][yMacro] = 0;
-  				}
-  			} else if (xMacro==0&&yMacro==2) {
-  				if (((mMacroboard[0][0]==id^mMacroboard[0][1]==id)||macroboardIsFull(0,0)||macroboardIsFull(0,1))&&
-  						((mMacroboard[1][1]==id^mMacroboard[2][0]==id)||macroboardIsFull(1,1)||macroboardIsFull(2,0))&&
-  						((mMacroboard[1][2]==id^mMacroboard[2][2]==id)||macroboardIsFull(1,2)||macroboardIsFull(2,2))	
-  						) {
-  					mMicroboardScore[xMacro][yMacro] = 0;
-  				}
-  			} else if (xMacro==1&&yMacro==2) {
-  				if (((mMacroboard[0][0]==id^mMacroboard[2][2]==id)||macroboardIsFull(0,0)||macroboardIsFull(2,2))&&
-  						((mMacroboard[0][2]==id^mMacroboard[2][0]==id)||macroboardIsFull(0,2)||macroboardIsFull(2,0))
-  						) {
-  					mMicroboardScore[xMacro][yMacro] = 0;
-  				}
-  			} else if (xMacro==2&&yMacro==2) {
-  				if (((mMacroboard[2][1]==id^mMacroboard[2][0]==id)||macroboardIsFull(2,1)||macroboardIsFull(2,0))&&
-  						((mMacroboard[1][2]==id^mMacroboard[0][2]==id)||macroboardIsFull(1,2)||macroboardIsFull(0,2))&&
-  						((mMacroboard[1][1]==id^mMacroboard[0][0]==id)||macroboardIsFull(1,1)||macroboardIsFull(2,2))	
-  						) {
-  					mMicroboardScore[xMacro][yMacro] = 0;
-  				}
-  			}
+	public void calculateMacroBoardScores(int id) {		
+		if (newMacroboard[0][0]==0&&newMacroboard[0][1]==0&&newMacroboard[0][2]==0) {
+			mMicroboardScore[0][0] = mMicroboardScore[0][0] + 0.1;
+			mMicroboardScore[0][1] = mMicroboardScore[0][1] + 0.1;
+			mMicroboardScore[0][2] = mMicroboardScore[0][2] + 0.1;
+		} 
+		if (newMacroboard[1][0]==0&&newMacroboard[1][1]==0&&newMacroboard[1][2]==0) {
+			mMicroboardScore[1][0] = mMicroboardScore[1][0] + 0.1;
+			mMicroboardScore[1][1] = mMicroboardScore[1][1] + 0.1;
+			mMicroboardScore[1][2] = mMicroboardScore[1][2] + 0.1;
+		} 
+		if (newMacroboard[2][0]==0&&newMacroboard[2][1]==0&&newMacroboard[2][2]==0) {
+			mMicroboardScore[2][0] = mMicroboardScore[2][0] + 0.1;
+			mMicroboardScore[2][1] = mMicroboardScore[2][1] + 0.1;
+			mMicroboardScore[2][2] = mMicroboardScore[2][2] + 0.1;
+		} 
+		if (newMacroboard[0][0]==0&&newMacroboard[1][0]==0&&newMacroboard[2][0]==0) {
+			mMicroboardScore[0][0] = mMicroboardScore[0][0] + 0.1;
+			mMicroboardScore[1][0] = mMicroboardScore[1][0] + 0.1;
+			mMicroboardScore[2][0] = mMicroboardScore[2][0] + 0.1;
+		} 
+		if (newMacroboard[0][1]==0&&newMacroboard[1][1]==0&&newMacroboard[2][1]==0) {
+			mMicroboardScore[0][1] = mMicroboardScore[0][1] + 0.1;
+			mMicroboardScore[1][1] = mMicroboardScore[1][1] + 0.1;
+			mMicroboardScore[2][1] = mMicroboardScore[2][1] + 0.1;
+		} 
+		if (newMacroboard[0][2]==0&&newMacroboard[1][2]==0&&newMacroboard[2][2]==0) {
+			mMicroboardScore[0][2] = mMicroboardScore[0][2] + 0.1;
+			mMicroboardScore[1][2] = mMicroboardScore[1][2] + 0.1;
+			mMicroboardScore[2][2] = mMicroboardScore[2][2] + 0.1;
+		} 
+		if (newMacroboard[0][0]==0&&newMacroboard[1][1]==0&&newMacroboard[2][2]==0) {
+			mMicroboardScore[0][0] = mMicroboardScore[0][0] + 0.1;
+			mMicroboardScore[1][1] = mMicroboardScore[1][1] + 0.1;
+			mMicroboardScore[2][2] = mMicroboardScore[2][2] + 0.1;
+		} 
+		if (newMacroboard[2][0]==0&&newMacroboard[1][1]==0&&newMacroboard[0][2]==0) {
+			mMicroboardScore[2][0] = mMicroboardScore[2][0] + 0.1;
+			mMicroboardScore[1][1] = mMicroboardScore[1][1] + 0.1;
+			mMicroboardScore[0][2] = mMicroboardScore[0][2] + 0.1;
+		} 
+		if (newMacroboard[0][0]==id&&newMacroboard[0][1]==0&&newMacroboard[0][2]==0) {
+			mMicroboardScore[0][1] = mMicroboardScore[0][1] + 0.2;
+			mMicroboardScore[0][2] = mMicroboardScore[0][2] + 0.2;
+		} else if (newMacroboard[0][0]==0&&newMacroboard[0][1]==id&&newMacroboard[0][2]==0) {
+			mMicroboardScore[0][0] = mMicroboardScore[0][0] + 0.2;
+			mMicroboardScore[0][2] = mMicroboardScore[0][2] + 0.2;
+		} else if (newMacroboard[0][0]==0&&newMacroboard[0][1]==0&&newMacroboard[0][2]==id) {
+			mMicroboardScore[0][0] = mMicroboardScore[0][0] + 0.2;
+			mMicroboardScore[0][1] = mMicroboardScore[0][1] + 0.2;
+		}
+		if (newMacroboard[1][0]==id&&newMacroboard[1][1]==0&&newMacroboard[1][2]==0) {
+			mMicroboardScore[1][1] = mMicroboardScore[1][1] + 0.2;
+			mMicroboardScore[1][2] = mMicroboardScore[1][2] + 0.2;
+		} else if (newMacroboard[1][0]==0&&newMacroboard[1][1]==id&&newMacroboard[1][2]==0) {
+			mMicroboardScore[1][0] = mMicroboardScore[1][0] + 0.2;
+			mMicroboardScore[1][2] = mMicroboardScore[1][2] + 0.2;
+		} else if (newMacroboard[1][0]==0&&newMacroboard[1][1]==0&&newMacroboard[1][2]==id) {
+			mMicroboardScore[1][0] = mMicroboardScore[1][0] + 0.2;
+			mMicroboardScore[1][1] = mMicroboardScore[1][1] + 0.2;
+		}
+		if (newMacroboard[2][0]==id&&newMacroboard[2][1]==0&&newMacroboard[2][2]==0) {
+			mMicroboardScore[2][1] = mMicroboardScore[2][1] + 0.2;
+			mMicroboardScore[2][2] = mMicroboardScore[2][2] + 0.2;
+		} else if (newMacroboard[2][0]==0&&newMacroboard[2][1]==id&&newMacroboard[2][2]==0) {
+			mMicroboardScore[2][0] = mMicroboardScore[2][0] + 0.2;
+			mMicroboardScore[2][2] = mMicroboardScore[2][2] + 0.2;
+		} else if (newMacroboard[2][0]==0&&newMacroboard[2][1]==0&&newMacroboard[2][2]==id) {
+			mMicroboardScore[2][0] = mMicroboardScore[2][0] + 0.2;
+			mMicroboardScore[2][1] = mMicroboardScore[2][1] + 0.2;
+		}
+		if (newMacroboard[0][0]==id&&newMacroboard[1][0]==0&&newMacroboard[2][0]==0) {
+			mMicroboardScore[1][0] = mMicroboardScore[1][0] + 0.2;
+			mMicroboardScore[2][0] = mMicroboardScore[2][0] + 0.2;
+		} else if (newMacroboard[0][0]==0&&newMacroboard[1][0]==id&&newMacroboard[2][0]==0) {
+			mMicroboardScore[0][0] = mMicroboardScore[0][0] + 0.2;
+			mMicroboardScore[2][0] = mMicroboardScore[2][0] + 0.2;
+		} else if (newMacroboard[0][0]==0&&newMacroboard[1][0]==0&&newMacroboard[2][0]==id) {
+			mMicroboardScore[0][0] = mMicroboardScore[0][0] + 0.2;
+			mMicroboardScore[1][0] = mMicroboardScore[1][0] + 0.2;
+		}
+		if (newMacroboard[0][1]==id&&newMacroboard[1][1]==0&&newMacroboard[2][1]==0) {
+			mMicroboardScore[1][1] = mMicroboardScore[1][1] + 0.2;
+			mMicroboardScore[2][1] = mMicroboardScore[2][1] + 0.2;
+		} else if (newMacroboard[0][1]==0&&newMacroboard[1][1]==id&&newMacroboard[2][1]==0) {
+			mMicroboardScore[0][1] = mMicroboardScore[0][1] + 0.2;
+			mMicroboardScore[2][1] = mMicroboardScore[2][1] + 0.2;
+		} else if (newMacroboard[0][1]==0&&newMacroboard[1][1]==0&&newMacroboard[2][1]==id) {
+			mMicroboardScore[0][1] = mMicroboardScore[0][1] + 0.2;
+			mMicroboardScore[1][1] = mMicroboardScore[1][1] + 0.2;
+		}
+		if (newMacroboard[0][2]==id&&newMacroboard[1][2]==0&&newMacroboard[2][2]==0) {
+			mMicroboardScore[1][2] = mMicroboardScore[1][2] + 0.2;
+			mMicroboardScore[2][2] = mMicroboardScore[2][2] + 0.2;
+		} else if (newMacroboard[0][2]==0&&newMacroboard[1][2]==id&&newMacroboard[2][2]==0) {
+			mMicroboardScore[0][2] = mMicroboardScore[0][2] + 0.2;
+			mMicroboardScore[2][2] = mMicroboardScore[2][2] + 0.2;
+		} else if (newMacroboard[0][2]==0&&newMacroboard[1][2]==0&&newMacroboard[2][2]==id) {
+			mMicroboardScore[0][2] = mMicroboardScore[0][2] + 0.2;
+			mMicroboardScore[1][2] = mMicroboardScore[1][2] + 0.2;
+		}
+		if (newMacroboard[0][0]==id&&newMacroboard[1][1]==0&&newMacroboard[2][2]==0) {
+			mMicroboardScore[1][1] = mMicroboardScore[1][1] + 0.2;
+			mMicroboardScore[2][2] = mMicroboardScore[2][2] + 0.2;
+		} else if (newMacroboard[0][0]==0&&newMacroboard[1][1]==id&&newMacroboard[2][2]==0) {
+			mMicroboardScore[0][0] = mMicroboardScore[0][0] + 0.2;
+			mMicroboardScore[2][2] = mMicroboardScore[2][2] + 0.2;
+		} else if (newMacroboard[0][0]==0&&newMacroboard[1][1]==0&&newMacroboard[2][2]==id) {
+			mMicroboardScore[0][0] = mMicroboardScore[0][0] + 0.2;
+			mMicroboardScore[1][1] = mMicroboardScore[1][1] + 0.2;
+		}
+		if (newMacroboard[2][0]==id&&newMacroboard[1][1]==0&&newMacroboard[0][2]==0) {
+			mMicroboardScore[1][1] = mMicroboardScore[1][1] + 0.2;
+			mMicroboardScore[0][2] = mMicroboardScore[0][2] + 0.2;
+		} else if (newMacroboard[2][0]==0&&newMacroboard[1][1]==id&&newMacroboard[0][2]==0) {
+			mMicroboardScore[2][0] = mMicroboardScore[2][0] + 0.2;
+			mMicroboardScore[0][2] = mMicroboardScore[0][2] + 0.2;
+		} else if (newMacroboard[2][0]==0&&newMacroboard[1][1]==0&&newMacroboard[0][2]==id) {
+			mMicroboardScore[2][0] = mMicroboardScore[2][0] + 0.2;
+			mMicroboardScore[1][1] = mMicroboardScore[1][1] + 0.2;
+		}
+		for (int x = 0; x < 3; x++) {
+			for (int y = 0; y < 3; y++) {
+				if (mMicroboardScore[x][y] > 1) {mMicroboardScore[x][y] = 1;}
 			}
 		}
 	}
@@ -504,13 +528,25 @@ public class Field {
 	
 	public int getWinningMoves(int id, int[][] board, int x, int y, boolean clacMacroScore) {
 		int n = 0;
+		if (clacMacroScore) {
+  		newMacroboard = new int[mMacroboard.length][];
+  		for(int k = 0; k < mMacroboard.length; k++)
+  			newMacroboard[k] = mMacroboard[k].clone();
+  		for (int i=0;i<3;i++) {
+  			for (int j=0;j<3;j++) {
+  				if(newMacroboard[i][j]==-1) {newMacroboard[i][j]=0;}
+  				if(newMacroboard[i][j]==0&&macroboardIsFull(i,j)) {newMacroboard[i][j]=-2;}
+  			}
+  		}
+  		board = newMacroboard;
+		}
 		if ((board[x+1][y] == id && board[x+2][y] == id)||
 	  		(board[x][y+1] == id && board[x][y+2] == id)||
 	  		(board[x+1][y+1] == id && board[x+2][y+2] == id)){
 	  	if ((board[x][y] == 0&&!macroboardIsFull(x/3,y/3))|| board[x][y] == -1) {
 	  		n++;
 	  		if (clacMacroScore) {
-	  			mMicroboardScore[x/3][y/3] = 5;
+	  			mMicroboardScore[x/3][y/3] = 1;
 	  		}
 	  	}
 	  }
@@ -519,7 +555,7 @@ public class Field {
 	  	if ((board[x+1][y] == 0&&!macroboardIsFull(x/3,y/3))|| board[x+1][y] == -1) {
 	  		n++;
 	  		if (clacMacroScore) {
-	  			mMicroboardScore[x/3][y/3] = 5;
+	  			mMicroboardScore[x/3+1][y/3] = 1;
 	  		}
 	  	}
 	  }
@@ -529,7 +565,7 @@ public class Field {
 	  	if ((board[x+2][y] == 0&&!macroboardIsFull(x/3,y/3)) || board[x+2][y] == -1) {
 	  		n++;
 	  		if (clacMacroScore) {
-	  			mMicroboardScore[x/3][y/3] = 5;
+	  			mMicroboardScore[x/3+2][y/3] = 1;
 	  		}
 	  	}
 	  }
@@ -538,7 +574,7 @@ public class Field {
 	  	if ((board[x][y+1] == 0&&!macroboardIsFull(x/3,y/3)) || board[x][y+1] == -1) {
 	  		n++;
 	  		if (clacMacroScore) {
-	  			mMicroboardScore[x/3][y/3] = 5;
+	  			mMicroboardScore[x/3][y/3+1] = 1;
 	  		}
 	  	}
 	  }
@@ -549,7 +585,7 @@ public class Field {
 	  	if ((board[x+1][y+1] == 0&&!macroboardIsFull(x/3,y/3)) || board[x+1][y+1] == -1) {
 	  		n++;
 	  		if (clacMacroScore) {
-	  			mMicroboardScore[x/3][y/3] = 5;
+	  			mMicroboardScore[x/3+1][y/3+1] = 1;
 	  		}
 	  	}
 	  }
@@ -558,7 +594,7 @@ public class Field {
 	  	if ((board[x+2][y+1] == 0&&!macroboardIsFull(x/3,y/3)) || board[x+2][y+1] == -1) {
 	  		n++;
 	  		if (clacMacroScore) {
-	  			mMicroboardScore[x/3][y/3] = 5;
+	  			mMicroboardScore[x/3+2][y/3+1] = 1;
 	  		}
 	  	}
 	  }
@@ -568,7 +604,7 @@ public class Field {
 	  	if ((board[x][y+2] == 0&&!macroboardIsFull(x/3,y/3)) || board[x][y+2] == -1) {
 	  		n++;
 	  		if (clacMacroScore) {
-	  			mMicroboardScore[x/3][y/3] = 5;
+	  			mMicroboardScore[x/3][y/3+2] = 1;
 	  		}
 	  	}
 	  }
@@ -577,7 +613,7 @@ public class Field {
 	  	if ((board[x+1][y+2] == 0&&!macroboardIsFull(x/3,y/3)) || board[x+1][y+2] == -1) {
 	  		n++;
 	  		if (clacMacroScore) {
-	  			mMicroboardScore[x/3][y/3] = 5;
+	  			mMicroboardScore[x/3+1][y/3+2] = 1;
 	  		}
 	  	}
 	  }
@@ -587,26 +623,13 @@ public class Field {
 	  	if ((board[x+2][y+2] == 0&&!macroboardIsFull(x/3,y/3)) || board[x+2][y+2] == -1) {
 	  		n++;
 	  		if (clacMacroScore) {
-	  			mMicroboardScore[x/3][y/3] = 5;
+	  			mMicroboardScore[x/3+2][y/3+2] = 1;
 	  		}
 	  	}
 	  }
 	  return n;
 	}
-	
-//	public void calculateScore(ArrayList<Move> moves) {
-//		int bwmBefore = getBoardWinningMoves(playerWhoHasTurnID,mBoard).size();
-//		for (int i = 0; i < moves.size(); i++) {
-//			Move move = moves.get(i);
-//			int [][] newBoard = new int[mBoard.length][];
-//			for(int n = 0; n < mBoard.length; n++)
-//				newBoard[n] = mBoard[n].clone();
-//			newBoard[move.getX()][move.getY()] = playerWhoHasTurnID;
-//			int bwmAfter = getBoardWinningMoves(playerWhoHasTurnID,newBoard).size();
-//			move.addNrOf3Extra(bwmAfter-bwmBefore);
-//		}
-//	}
-	
+
 	public Field playMove(Move move) {
 		Field newField = new Field();
 		int [][] newBoard = new int[mBoard.length][];
@@ -705,39 +728,6 @@ public class Field {
 	public Boolean isInActiveMicroboard(int x, int y) {
 	    return mMacroboard[(int) x/3][(int) y/3] == -1;
 	}
-	
-//	public void filterOutOppHaveAllOptions(ArrayList<Move> moves) {
-//		for (int i = 0; i < moves.size(); i++) {
-//			Move move = moves.get(i);
-//			int x = move.getX();
-//			int y = move.getY();
-//			int status = getStatusNextMacroboard(x,y, mMacroboard);
-//			if ((status == 0 || status == -1) && !nextMacroboardIsFull(x,y, mBoard)) {
-//				move.addNrOf3Extra(100);
-//			}
-//		}
-//	}
-	
-//	public void filterOutOppCanMake3NextTurn(ArrayList<Move> moves, ArrayList<Move> oppBoardWinningMoves) {
-//		for (int i = 0; i < moves.size(); i++) {
-//			Move move = moves.get(i);
-//			int xMacro = move.getX()%3;
-//			int yMacro = move.getY()%3;
-//			boolean found = false;
-//			for (int j = 0; j < oppBoardWinningMoves.size(); j++) {
-//				Move oppBoardWinningMove = oppBoardWinningMoves.get(j);
-//				int xMacroOpp =oppBoardWinningMove.getX()/3;
-//				int yMacroOpp =oppBoardWinningMove.getY()/3;
-//				if ((xMacroOpp==xMacro)&&(yMacroOpp==yMacro)) {
-//					found = true;
-//					break;
-//				}
-//			}
-//			if (!found) {
-//				move.addNrOf3Extra(50);
-//			}
-//		}
-//	}
 	
 	public int getStatusNextMacroboard(int x, int y, int[][] macroboard) {
 		int xMacro = x%3;

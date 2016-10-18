@@ -26,7 +26,8 @@ package bot;
  */
 
 public class Move {
-	int mX, mY, score;
+	int mX, mY;
+	double score;
 	private int depth;
 	
 	public Move() {
@@ -41,8 +42,8 @@ public class Move {
 	
 	public int getX() { return mX; }
 	public int getY() { return mY; }
-	public int getScore() { return score; }
-	public void addScore(int i) {score=score+i;}
+	public double getScore() { return score; }
+	public void addScore(double i) {score=score+i;}
 
 	public void setDepth(int depth) {
 		this.depth = depth;

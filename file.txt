@@ -1,25 +1,2 @@
-Move X: 0 Y: 6 score: 989897 depth: 0
-Move X: 1 Y: 6 score: 989898 depth: 0
-Move X: 2 Y: 6 score: 989897 depth: 0
-Move X: 0 Y: 7 score: -10102 depth: 0
-Move X: 1 Y: 7 score: 989896 depth: 0
-Move X: 2 Y: 7 score: 989898 depth: 0
-Move X: 0 Y: 8 score: 989897 depth: 0
-Move X: 1 Y: 8 score: 989898 depth: 0
-Move X: 2 Y: 8 score: -10103 depth: 0
-Move X: 6 Y: 2 score: -10103 depth: 1
-Move X: 5 Y: 0 score: -10103 depth: 2
-Move X: 0 Y: 3 score: 9900 depth: 0
-Move X: 1 Y: 3 score: 9900 depth: 0
-Move X: 2 Y: 3 score: 9900 depth: 0
-Move X: 0 Y: 4 score: 9900 depth: 0
-Move X: 1 Y: 4 score: 9900 depth: 0
-Move X: 2 Y: 4 score: 9900 depth: 0
-Move X: 0 Y: 5 score: 9900 depth: 0
-Move X: 1 Y: 5 score: 9900 depth: 0
-Move X: 2 Y: 5 score: 9900 depth: 0
-Move X: 6 Y: 7 score: 9900 depth: 1
-Move X: 5 Y: 2 score: 9900 depth: 2
-Move X: 1 Y: 0 score: -10103 depth: 3
-place_move 1 0
+place_move 1 3
 

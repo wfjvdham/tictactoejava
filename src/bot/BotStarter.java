@@ -40,7 +40,7 @@ public class BotStarter {
 		ArrayList<Move> availableMoves = field.getAvailableMoves();
 		//place move and calculate score of board
 		int depth = 3;
-		int alpha = Integer.MAX_VALUE;
+		double alpha = Integer.MAX_VALUE;
 		for (int i = 0; i < availableMoves.size(); i++) {
 			Move move = availableMoves.get(i);
 			Field newField = field.playMove(move);
@@ -48,11 +48,11 @@ public class BotStarter {
 			move.addScore(sd.getScore());
 			move.setDepth(sd.getDepth());
 			alpha = sd.getAlpha();
-			System.out.println(
-					"Move X: " + move.getX() 
-					+ " Y: " + move.getY() 
-					+ " score: " + move.getScore()
-					+ " depth: " + depth);
+//			System.out.println(
+//					"Move X: " + move.getX() 
+//					+ " Y: " + move.getY() 
+//					+ " score: " + move.getScore()
+//					+ " depth: " + depth);
 		}		
 		//TODO add a b pruning
 		//TODO refine microboard scores for emty situations

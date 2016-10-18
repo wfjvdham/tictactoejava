@@ -1,17 +1,17 @@
 package bot;
 
 public class ScoreDepth {
-	private int score;
+	private double score;
 	private int depth;
-	private int alpha;
+	private double alpha;
 	
-	public ScoreDepth(int score, int depth, int alpha) {
-		this.score = score;
+	public ScoreDepth(double score2, int depth, double alpha2) {
+		this.score = score2;
 		this.depth = depth;
-		this.alpha = alpha;
+		this.alpha = alpha2;
 	}
 	
-	public int getScore() {
+	public double getScore() {
 		return score;
 	}
 	
@@ -19,7 +19,7 @@ public class ScoreDepth {
 		return depth;
 	}
 	
-	public int getAlpha() {
+	public double getAlpha() {
 		return alpha;
 	}
 }
