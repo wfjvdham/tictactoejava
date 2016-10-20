@@ -39,30 +39,23 @@ public class BotStarter {
 	public Move makeTurn(Field field) {	
 		ArrayList<Move> availableMoves = field.getAvailableMoves();
 		//place move and calculate score of board
-		int depth = 3;
+		int depth = 5;
 		double alpha = Integer.MAX_VALUE;
+		double beta = Integer.MIN_VALUE;
 		for (int i = 0; i < availableMoves.size(); i++) {
 			Move move = availableMoves.get(i);
 			Field newField = field.playMove(move);
-			ScoreDepth sd = newField.getScore(depth, alpha);
+			ScoreDepth sd = newField.getScore(depth, alpha, beta);
 			move.addScore(sd.getScore());
 			move.setDepth(sd.getDepth());
 			alpha = sd.getAlpha();
+			beta = sd.getBeta();
 //			System.out.println(
 //					"Move X: " + move.getX() 
 //					+ " Y: " + move.getY() 
 //					+ " score: " + move.getScore()
 //					+ " depth: " + depth);
 		}		
-		//TODO add a b pruning
-		//TODO refine microboard scores for emty situations
-		//TODO do not give other player possibility to block
-		//TODO if macro is usefull prefer making 3 in a row
-		//TODO if opponent macro is dangerous prefer blocking
-		//TODO calculate opp macro score
-		//TODO when a move blocks three in and the next move is in the same macro
-			//alg thinks this is bad because opp can make 3 in a row, but this is blocked..
-		//field.calculateScore(availableMoves);
 		Collections.sort(availableMoves, new Comparator<Move>(){
 		  public int compare(Move m1, Move m2)
 		  {

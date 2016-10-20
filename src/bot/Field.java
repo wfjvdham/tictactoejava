@@ -118,11 +118,7 @@ public class Field {
 		}
 	}
 	
-	public ScoreDepth getScore(int depth, double alpha) {
-		int oppId = 1;
-		if (myID==1) {
-			oppId = 2;
-		}
+	public ScoreDepth getScore(int depth, double alpha, double beta) {
 		int id = 1;
 		if (playerWhoHasTurnID == 1) {
 			id = 2;
@@ -137,7 +133,7 @@ public class Field {
 				alpha = Integer.MIN_VALUE;
 				score=Integer.MIN_VALUE;
 			}
-			return new ScoreDepth(score,depth,alpha);
+			return new ScoreDepth(score,depth,alpha,beta);
 		}	else {
 			//check how much macroboard three in a rows can be made
 			//macro boards
@@ -167,23 +163,29 @@ public class Field {
 			}
 		}
 		if (depth==0) {
-			return new ScoreDepth(score,depth,alpha);
-		} else if (depth==2) {
-			//TODO remove depth check from this if and replace by comparing alpha based on playerwHows turn it is
-			//possible alsa add a betha
-			//return current score to allow check where deeper evaluation is needed
-			if (score <= alpha) {
-				alpha = score;
-				return goDeeper(depth,alpha);
-			} else {
-				return new ScoreDepth(score,depth,alpha);
-			}
+			return new ScoreDepth(score,depth,alpha,beta);
+		} else if (depth<2) {
+			if (playerWhoHasTurnID==myID) {
+  			if (score <= alpha) {
+  				alpha = score;
+  				return goDeeper(depth,alpha,beta);
+  			} else {
+  				return new ScoreDepth(score,depth,alpha,beta);
+  			}
+  		} else {
+  			if (score >= beta) {
+  				beta = score;
+  				return goDeeper(depth,alpha,beta);
+  			} else {
+  				return new ScoreDepth(score,depth,alpha,beta);
+  			}
+  		}
 		} else {
-  		return goDeeper(depth,alpha);
+			return goDeeper(depth,alpha,beta);
 		}
 	}
 	
-	private ScoreDepth goDeeper(int depth,double alpha) {
+	private ScoreDepth goDeeper(int depth,double alpha,double beta) {
 		//recursivly get score of next opp moves
 		ArrayList<Move> availableMoves = getAvailableMoves();
 		if (availableMoves.size()>0) {
@@ -192,15 +194,16 @@ public class Field {
   		for (int i = 0; i < availableMoves.size(); i++) {
   			Move move = availableMoves.get(i);
   			Field newField = playMove(move);
-  			ScoreDepth sd = newField.getScore(depth,alpha);
+  			ScoreDepth sd = newField.getScore(depth,alpha,beta);
   			move.addScore(sd.getScore());
   			move.setDepth(sd.getDepth());
   			alpha = sd.getAlpha();
-  //			System.out.println(
-  //					"Move X: " + move.getX() 
-  //					+ " Y: " + move.getY() 
-  //					+ " score: " + move.getScore()
-  //					+ " depth: " + depth);
+  			beta = sd.getBeta();
+//  			System.out.println(
+//  					"Move X: " + move.getX() 
+//  					+ " Y: " + move.getY() 
+//  					+ " score: " + move.getScore()
+//  					+ " depth: " + depth);
   		}
   		if (playerWhoHasTurnID==myID) {
     		Collections.sort(availableMoves, new Comparator<Move>(){
@@ -241,10 +244,10 @@ public class Field {
     		  }
     		});
   		}
-  		return new ScoreDepth(availableMoves.get(0).getScore(),depth,alpha);
+  		return new ScoreDepth(availableMoves.get(0).getScore(),depth,alpha,beta);
 		} else {
 			//game is a draw
-			return new ScoreDepth(0,depth,alpha);
+			return new ScoreDepth(0,depth,alpha,beta);
 		}
 	}
 	
