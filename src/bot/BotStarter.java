@@ -39,13 +39,14 @@ public class BotStarter {
 	public Move makeTurn(Field field) {	
 		ArrayList<Move> availableMoves = field.getAvailableMoves();
 		//place move and calculate score of board
-		int depth = 5;
+		int depth = 6;
 		double alpha = Integer.MAX_VALUE;
 		double beta = Integer.MIN_VALUE;
 		for (int i = 0; i < availableMoves.size(); i++) {
 			Move move = availableMoves.get(i);
 			Field newField = field.playMove(move);
 			ScoreDepth sd = newField.getScore(depth, alpha, beta);
+			newField = null;
 			move.addScore(sd.getScore());
 			move.setDepth(sd.getDepth());
 			alpha = sd.getAlpha();

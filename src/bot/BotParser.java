@@ -45,6 +45,7 @@ public class BotParser {
 	public void run() {
 		this.scan = new Scanner(System.in);
 		mField = new Field();
+		mField.createBoard();
 		while(scan.hasNextLine()) {
 			String line = scan.nextLine();
 

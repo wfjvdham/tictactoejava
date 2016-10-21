@@ -128,14 +128,20 @@ public class Tests {
 	@Test
 	public void endGameTest() throws InterruptedException {
 		setFileAsInput("C://Users//w.vanderham//workspace//tictactoejava//input//endGameTest.txt");
-		String str = myOut.toString().substring(0, 14);
+		String str = myOut.toString();//.substring(0, 14);
+//	FileOutputStream f = new FileOutputStream("file.txt");
+//	System.setOut(new PrintStream(f));
+//	System.out.println(str);
 		assertEquals("place_move 1 2",str);
 	}
 	
 	@Test
-	public void errorTest() throws InterruptedException {
-		setFileAsInput("C://Users//w.vanderham//workspace//tictactoejava//input//error1.txt");
+	public void errorTest() throws InterruptedException, FileNotFoundException {
+		setFileAsInput("C://Users//w.vanderham//workspace//tictactoejava//input//starnge1.txt");
 		String str = myOut.toString().substring(0, 14);
+//	FileOutputStream f = new FileOutputStream("file.txt");
+//	System.setOut(new PrintStream(f));
+//	System.out.println(str);
     assertEquals("place_move 4 1",str);
 	}
 }

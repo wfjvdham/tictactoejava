@@ -42,10 +42,16 @@ public class Field {
 	private String mLastError = "";
 	
 	public Field() {
+		//mBoard = new int[COLS][ROWS];
+		//mMacroboard = new int[COLS / 3][ROWS / 3];
+		mMicroboardScore = new double[COLS / 3][ROWS / 3];
+		clearMacroboardScores();
+		//clearBoard();
+	}
+	
+	public void createBoard() {
 		mBoard = new int[COLS][ROWS];
 		mMacroboard = new int[COLS / 3][ROWS / 3];
-		mMicroboardScore = new double[COLS / 3][ROWS / 3];
-		clearBoard();
 	}
 	
 	public int getMyID() {
@@ -129,6 +135,7 @@ public class Field {
 		if (status!=0&&status!=-1) {
 			if (status==myID) {
 				score=Integer.MAX_VALUE;
+				beta=Integer.MAX_VALUE;
 			} else {
 				alpha = Integer.MIN_VALUE;
 				score=Integer.MIN_VALUE;
@@ -364,15 +371,55 @@ public class Field {
 
 	public ArrayList<Move> getAvailableMoves() {
 	  ArrayList<Move> moves = new ArrayList<Move>();
-		
-		for (int y = 0; y < ROWS; y++) {
-            for (int x = 0; x < COLS; x++) {
-                if (isInActiveMicroboard(x, y) && mBoard[x][y] == 0) {
-                    moves.add(new Move(x, y));
-                }
-            }
-        }
-
+	  for (int y = 0; y < 3; y++) {
+      for (int x = 0; x < 3; x++) {
+      	if(mMacroboard[x][y] == -1) {
+      		int i=1,j=1;
+      		if (mBoard[x+i][y+j] == 0) {
+      			moves.add(new Move(x+i, y+j));
+      		}
+      		i=0;j=1;
+      		if (mBoard[x+i][y+j] == 0) {
+      			moves.add(new Move(x+i, y+j));
+      		}
+      		i=2;j=1;
+      		if (mBoard[x+i][y+j] == 0) {
+      			moves.add(new Move(x+i, y+j));
+      		}
+      		i=1;j=0;
+      		if (mBoard[x+i][y+j] == 0) {
+      			moves.add(new Move(x+i, y+j));
+      		}
+      		i=1;j=2;
+      		if (mBoard[x+i][y+j] == 0) {
+      			moves.add(new Move(x+i, y+j));
+      		}
+      		i=0;j=0;
+      		if (mBoard[x+i][y+j] == 0) {
+      			moves.add(new Move(x+i, y+j));
+      		}
+      		i=2;j=0;
+      		if (mBoard[x+i][y+j] == 0) {
+      			moves.add(new Move(x+i, y+j));
+      		}
+      		i=0;j=2;
+      		if (mBoard[x+i][y+j] == 0) {
+      			moves.add(new Move(x+i, y+j));
+      		}
+      		i=2;j=2;
+      		if (mBoard[x+i][y+j] == 0) {
+      			moves.add(new Move(x+i, y+j));
+      		}
+      	}
+      }
+	  }
+//		for (int y = 0; y < ROWS; y++) {
+//      for (int x = 0; x < COLS; x++) {
+//        if (mBoard[x][y] == 0 && isInActiveMicroboard(x, y)) {
+//          moves.add(new Move(x, y));
+//        }
+//      }
+//    }
 		return moves;
 	}
 	
@@ -380,9 +427,9 @@ public class Field {
 		double score = 0;
 	  for (int x = 0; x < COLS; x=x+3) {
 		  for (int y = 0; y < ROWS; y=y+3) {
-		  	if(mMacroboard[x/3][y/3]!=1&&mMacroboard[x/3][y/3]!=2&&!macroboardIsFull(x/3, y/3)) {
+		  	//if(mMacroboard[x/3][y/3]!=1&&mMacroboard[x/3][y/3]!=2&&!macroboardIsFull(x/3, y/3)) {
 		  		score = score + (getWinningMoves(id,board,x,y,false)*mMicroboardScore[x/3][y/3]);
-		  	}
+		  	//}
 		  }
 	  }
 		return score;
@@ -546,18 +593,18 @@ public class Field {
 		if ((board[x+1][y] == id && board[x+2][y] == id)||
 	  		(board[x][y+1] == id && board[x][y+2] == id)||
 	  		(board[x+1][y+1] == id && board[x+2][y+2] == id)){
-	  	if ((board[x][y] == 0&&!macroboardIsFull(x/3,y/3))|| board[x][y] == -1) {
+	  	if (board[x][y] == 0|| board[x][y] == -1) {
 	  		n++;
-	  		if (clacMacroScore) {
+	  		if (clacMacroScore&&newMacroboard[x/3][y/3]==0) {
 	  			mMicroboardScore[x/3][y/3] = 1;
 	  		}
 	  	}
 	  }
 	  if ((board[x][y] == id && board[x+2][y] == id)||
 	  		(board[x+1][y+1] == id && board[x+1][y+2] == id)){
-	  	if ((board[x+1][y] == 0&&!macroboardIsFull(x/3,y/3))|| board[x+1][y] == -1) {
+	  	if (board[x][y] == 0|| board[x][y] == -1) {
 	  		n++;
-	  		if (clacMacroScore) {
+	  		if (clacMacroScore&&newMacroboard[x/3+1][y/3]==0) {
 	  			mMicroboardScore[x/3+1][y/3] = 1;
 	  		}
 	  	}
@@ -565,18 +612,18 @@ public class Field {
 	  if ((board[x][y] == id && board[x+1][y] == id)||
 	  		(board[x+1][y+1] == id && board[x][y+2] == id)||
 	  		(board[x+2][y+1] == id && board[x+2][y+2] == id)){
-	  	if ((board[x+2][y] == 0&&!macroboardIsFull(x/3,y/3)) || board[x+2][y] == -1) {
+	  	if (board[x][y] == 0|| board[x][y] == -1) {
 	  		n++;
-	  		if (clacMacroScore) {
+	  		if (clacMacroScore&&newMacroboard[x/3+2][y/3]==0) {
 	  			mMicroboardScore[x/3+2][y/3] = 1;
 	  		}
 	  	}
 	  }
 	  if ((board[x][y] == id && board[x][y+2] == id)||
 	  		(board[x+1][y+1] == id && board[x+2][y+1] == id)){
-	  	if ((board[x][y+1] == 0&&!macroboardIsFull(x/3,y/3)) || board[x][y+1] == -1) {
+	  	if (board[x][y] == 0|| board[x][y] == -1) {
 	  		n++;
-	  		if (clacMacroScore) {
+	  		if (clacMacroScore&&newMacroboard[x/3][y/3+1]==0) {
 	  			mMicroboardScore[x/3][y/3+1] = 1;
 	  		}
 	  	}
@@ -585,18 +632,18 @@ public class Field {
 	  		(board[x+2][y] == id && board[x][y+2] == id)||
 	  		(board[x][y+1] == id && board[x+2][y+1] == id)||
 	  		(board[x+1][y] == id && board[x+1][y+2] == id)){
-	  	if ((board[x+1][y+1] == 0&&!macroboardIsFull(x/3,y/3)) || board[x+1][y+1] == -1) {
+	  	if (board[x][y] == 0|| board[x][y] == -1) {
 	  		n++;
-	  		if (clacMacroScore) {
+	  		if (clacMacroScore&&newMacroboard[x/3+1][y/3+1]==0) {
 	  			mMicroboardScore[x/3+1][y/3+1] = 1;
 	  		}
 	  	}
 	  }
 	  if ((board[x][y+1] == id && board[x+1][y+1] == id)||
 	  		(board[x+2][y] == id && board[x+2][y+2] == id)){
-	  	if ((board[x+2][y+1] == 0&&!macroboardIsFull(x/3,y/3)) || board[x+2][y+1] == -1) {
+	  	if (board[x][y] == 0|| board[x][y] == -1) {
 	  		n++;
-	  		if (clacMacroScore) {
+	  		if (clacMacroScore&&newMacroboard[x/3+2][y/3+1]==0) {
 	  			mMicroboardScore[x/3+2][y/3+1] = 1;
 	  		}
 	  	}
@@ -604,18 +651,18 @@ public class Field {
 	  if ((board[x][y] == id && board[x][y+1] == id)||
 	  		(board[x+1][y+2] == id && board[x+2][y+2] == id)||
 	  		(board[x+1][y+1] == id && board[x+2][y] == id)){
-	  	if ((board[x][y+2] == 0&&!macroboardIsFull(x/3,y/3)) || board[x][y+2] == -1) {
+	  	if (board[x][y] == 0|| board[x][y] == -1) {
 	  		n++;
-	  		if (clacMacroScore) {
+	  		if (clacMacroScore&&newMacroboard[x/3][y/3+2]==0) {
 	  			mMicroboardScore[x/3][y/3+2] = 1;
 	  		}
 	  	}
 	  }
 	  if ((board[x][y+2] == id && board[x+2][y+2] == id)||
 	  		(board[x+1][y] == id && board[x+1][y+1] == id)){
-	  	if ((board[x+1][y+2] == 0&&!macroboardIsFull(x/3,y/3)) || board[x+1][y+2] == -1) {
+	  	if (board[x][y] == 0|| board[x][y] == -1) {
 	  		n++;
-	  		if (clacMacroScore) {
+	  		if (clacMacroScore&&newMacroboard[x/3+1][y/3+2]==0) {
 	  			mMicroboardScore[x/3+1][y/3+2] = 1;
 	  		}
 	  	}
@@ -623,9 +670,9 @@ public class Field {
 	  if ((board[x][y+2] == id && board[x+1][y+2] == id)||
 	  		(board[x+2][y] == id && board[x+2][y+1] == id)||
 	  		(board[x+1][y+1] == id && board[x][y] == id)){
-	  	if ((board[x+2][y+2] == 0&&!macroboardIsFull(x/3,y/3)) || board[x+2][y+2] == -1) {
+	  	if (board[x][y] == 0|| board[x][y] == -1) {
 	  		n++;
-	  		if (clacMacroScore) {
+	  		if (clacMacroScore&&newMacroboard[x/3+2][y/3+2]==0) {
 	  			mMicroboardScore[x/3+2][y/3+2] = 1;
 	  		}
 	  	}
