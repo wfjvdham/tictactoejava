@@ -193,7 +193,7 @@ public class Field {
 	}
 	
 	private ScoreDepth goDeeper(int depth,double alpha,double beta) {
-		//recursivly get score of next opp moves
+		//Recursively get score of next opp moves
 		ArrayList<Move> availableMoves = getAvailableMoves();
 		if (availableMoves.size()>0) {
   		//place move and calculate score of board
@@ -206,11 +206,12 @@ public class Field {
   			move.setDepth(sd.getDepth());
   			alpha = sd.getAlpha();
   			beta = sd.getBeta();
-//  			System.out.println(
-//  					"Move X: " + move.getX() 
-//  					+ " Y: " + move.getY() 
-//  					+ " score: " + move.getScore()
-//  					+ " depth: " + depth);
+  			//print extra info for debugging
+  			//System.out.println(
+  			//	"Move X: " + move.getX() 
+  			//  + " Y: " + move.getY() 
+  			//  + " score: " + move.getScore()
+  			//  + " depth: " + depth);
   		}
   		if (playerWhoHasTurnID==myID) {
     		Collections.sort(availableMoves, new Comparator<Move>(){
@@ -305,6 +306,7 @@ public class Field {
 	}
 	
 	private double getOptionsOnMicroboards(int id) {
+		//TODO refine macroboard score based on internal probability of capturing the board
 		double score = 0;
 		int[][] board = mBoard;
 		for (int x = 0; x < 9; x=x+3) {
@@ -413,13 +415,6 @@ public class Field {
       	}
       }
 	  }
-//		for (int y = 0; y < ROWS; y++) {
-//      for (int x = 0; x < COLS; x++) {
-//        if (mBoard[x][y] == 0 && isInActiveMicroboard(x, y)) {
-//          moves.add(new Move(x, y));
-//        }
-//      }
-//    }
 		return moves;
 	}
 	
@@ -427,9 +422,7 @@ public class Field {
 		double score = 0;
 	  for (int x = 0; x < COLS; x=x+3) {
 		  for (int y = 0; y < ROWS; y=y+3) {
-		  	//if(mMacroboard[x/3][y/3]!=1&&mMacroboard[x/3][y/3]!=2&&!macroboardIsFull(x/3, y/3)) {
-		  		score = score + (getWinningMoves(id,board,x,y,false)*mMicroboardScore[x/3][y/3]);
-		  	//}
+		  	score = score + (getWinningMoves(id,board,x,y,false)*mMicroboardScore[x/3][y/3]);
 		  }
 	  }
 		return score;

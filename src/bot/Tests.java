@@ -49,9 +49,6 @@ public class Tests {
 	public void make3Test() throws FileNotFoundException, InterruptedException {
 		setFileAsInput("C://Users//w.vanderham//workspace//tictactoejava//input//make3Test.txt");
 		String str = myOut.toString().substring(0, 14);
-//		FileOutputStream f = new FileOutputStream("file.txt");
-//		System.setOut(new PrintStream(f));
-//		System.out.println(str);
     assertEquals("place_move 2 2",str);
 	}
 	
@@ -97,9 +94,6 @@ public class Tests {
 	public void winningGameTest() throws FileNotFoundException, InterruptedException {
 		setFileAsInput("C://Users//w.vanderham//workspace//tictactoejava//input//winningGame.txt");
 		String str = myOut.toString().substring(0, 14);
-//  	FileOutputStream f = new FileOutputStream("file.txt");
-//  	System.setOut(new PrintStream(f));
-//  	System.out.println(str);
 		assertEquals("place_move 2 6",str);
 	}
 	
@@ -107,21 +101,13 @@ public class Tests {
 	public void uselessMacroboardTest() throws FileNotFoundException, InterruptedException {
 		setFileAsInput("C://Users//w.vanderham//workspace//tictactoejava//input//uselessMacroboardTest2.txt");
 		String str1 = myOut.toString().substring(0, 14);
-		//String str2 = myOut.toString().substring(16, 30);
-//		FileOutputStream f = new FileOutputStream("file.txt");
-//		System.setOut(new PrintStream(f));
-//		System.out.println(str1);
 		assertEquals("place_move 2 7",str1);
-//		assertTrue(!"place_move 2 7".equals(str2));
 	}
 	
 	@Test
 	public void minMaxTest() throws FileNotFoundException, InterruptedException {
 		setFileAsInput("C://Users//w.vanderham//workspace//tictactoejava//input//minMaxTest.txt");
 		String str = myOut.toString().substring(0, 14);
-//		FileOutputStream f = new FileOutputStream("file.txt");
-//		System.setOut(new PrintStream(f));
-//		System.out.println(str);
 		assertEquals("place_move 1 2",str);
 	}
 	
@@ -129,19 +115,13 @@ public class Tests {
 	public void endGameTest() throws InterruptedException {
 		setFileAsInput("C://Users//w.vanderham//workspace//tictactoejava//input//endGameTest.txt");
 		String str = myOut.toString();//.substring(0, 14);
-//	FileOutputStream f = new FileOutputStream("file.txt");
-//	System.setOut(new PrintStream(f));
-//	System.out.println(str);
 		assertEquals("place_move 1 2",str);
 	}
 	
 	@Test
 	public void errorTest() throws InterruptedException, FileNotFoundException {
 		setFileAsInput("C://Users//w.vanderham//workspace//tictactoejava//input//starnge1.txt");
-		String str = myOut.toString().substring(0, 14);
-//	FileOutputStream f = new FileOutputStream("file.txt");
-//	System.setOut(new PrintStream(f));
-//	System.out.println(str);
+		String str = myOut.toString().substring(0, 14);;
     assertEquals("place_move 4 1",str);
 	}
 }

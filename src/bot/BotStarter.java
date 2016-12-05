@@ -42,21 +42,25 @@ public class BotStarter {
 		int depth = 6;
 		double alpha = Integer.MAX_VALUE;
 		double beta = Integer.MIN_VALUE;
+		//TODO add preferred first move for every square
 		for (int i = 0; i < availableMoves.size(); i++) {
 			Move move = availableMoves.get(i);
 			Field newField = field.playMove(move);
+			//use Alpha–beta pruning to find moves
 			ScoreDepth sd = newField.getScore(depth, alpha, beta);
 			newField = null;
 			move.addScore(sd.getScore());
 			move.setDepth(sd.getDepth());
 			alpha = sd.getAlpha();
 			beta = sd.getBeta();
-//			System.out.println(
-//					"Move X: " + move.getX() 
-//					+ " Y: " + move.getY() 
-//					+ " score: " + move.getScore()
-//					+ " depth: " + depth);
+			//print extra info for debugging
+			//System.out.println(
+			//"Move X: " + move.getX() 
+			//+ " Y: " + move.getY() 
+			//+ " score: " + move.getScore()
+			//+ " depth: " + depth);
 		}		
+		//sort available moves on score and on depth
 		Collections.sort(availableMoves, new Comparator<Move>(){
 		  public int compare(Move m1, Move m2)
 		  {
